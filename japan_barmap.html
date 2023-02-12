@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+
+<head>
+  <meta charset="utf-8">
+  <script src='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.js'></script>
+  <link href='https://api.mapbox.com/mapbox-gl-js/v2.1.1/mapbox-gl.css' rel='stylesheet' />
+  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@5/turf.min.js"></script>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <style>
+    #mapID {
+      height: 700px;
+    }
+
+    #position {
+      position: absolute;
+      top: 0;
+      height: 70px;
+      width: 500px;
+      background-color: #fff;
+      padding: 30px;
+      margin: 10px;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+  </style>
+  <script language="javascript" type="text/javascript">
+    var LD = {
+      "北海道": [43.420962, 142.781281],
+      "青森県": [40.699056, 140.726924],
+      "岩手県": [39.511756, 141.399429],
+      "宮城県": [38.381565, 140.941651],
+      "秋田県": [39.678886, 140.392163],
+      "山形県": [38.497668, 140.108578],
+      "福島県": [37.418743, 140.231252],
+      "茨城県": [36.304975, 140.385361],
+      "栃木県": [36.683168, 139.817955],
+      "群馬県": [36.481484, 138.923514],
+      "埼玉県": [36.003615, 139.368331],
+      "千葉県": [35.473969, 140.222304],
+      "東京都": [35.686991, 139.539242],
+      "神奈川県": [35.40362, 139.349213],
+      "新潟県": [37.368708, 138.888731],
+      "富山県": [36.607484, 137.287216],
+      "石川県": [36.772391, 136.778841],
+      "福井県": [35.81261, 136.184399],
+      "山梨県": [35.609615, 138.628685],
+      "長野県": [36.149935, 138.024588],
+      "岐阜県": [35.778724, 137.057877],
+      "静岡県": [35.033282, 138.312185],
+      "愛知県": [35.002511, 137.208724],
+      "三重県": [34.484291, 136.432514],
+      "滋賀県": [35.22592, 136.139617],
+      "京都府": [35.220152, 135.517902],
+      "大阪府": [34.598366, 135.545261],
+      "兵庫県": [35.068625, 134.794436],
+      "奈良県": [34.292803, 135.896845],
+      "和歌山県": [33.848677, 135.416815],
+      "鳥取県": [35.391534, 133.850276],
+      "島根県": [34.975087, 132.423277],
+      "岡山県": [34.861972, 133.83399],
+      "広島県": [34.588492, 132.792091],
+      "山口県": [34.226281, 131.430559],
+      "徳島県": [33.915461, 134.273465],
+      "香川県": [34.21968, 133.979044],
+      "愛媛県": [33.661193, 132.838719],
+      "高知県": [33.507085, 133.364174],
+      "福岡県": [33.599679, 130.682867],
+      "佐賀県": [33.279436, 130.118294],
+      "長崎県": [32.955619, 129.715641],
+      "熊本県": [32.58723, 130.807836],
+      "大分県": [33.203809, 131.411655],
+      "宮崎県": [32.200128, 131.353483],
+      "鹿児島県": [31.355836, 130.410976],
+      "沖縄県": [26.477084, 127.922927]
+    };
+    let i = 0;
+    for (let k in LD) {
+      let v = LD[k];
+      LD[k.replace(/[都道府県$]/, "")] = v;
+      if (i < 10) {
+        LD["0" + i.toString] = v;
+      }
+      LD[i.toString()] = v;
+      i++;
+    }
+  </script>
+
+</head>
+
+<body>
+  <div id="mapID"></div>
+  <p>
+  #行頭の#はコメントアウトになります<br>
+  #「都道府県名または市区町村名」,「棒グラフ化したい数量」「改行」の順番に書いてください<br>
+  </p>
+  <textarea id="tsvdata" style="width:100%; height: 100px;" placeholder="地図上に棒グラフを書きたい場所名と数量をエクセルからコピペする">
+#基本的にExcelから以下のような2列をコピペすれば良い
+東京都	100
+埼玉県	60
+千葉県	30
+</textarea>
+  <script language="javascript" type="text/javascript">
+    const sleep = ms => new Promise(res => setTimeout(res, ms))
+    const defaulttoken = 'pk.eyJ1Ijoib25saW5lY29uc3VsdGFudCIsImEiOiJ0NXNSdE1VIn0.48aKT-tYUwPSibdAXP_NAQ'
+    const stylesdic = {
+      hakuchizu: {token: "pk.eyJ1IjoiaGlyb3NhamkiLCJhIjoiY2szOWlqZWNzMDJueTNjcWhyNjhqdXBnOSJ9._6mJT202QqpnMuK-jvMr3g", style: "mapbox://styles/hirosaji/cklfggkyj4ytl17qhtxrp2qco"},
+      all_ja: {token: "pk.eyJ1Ijoib25saW5lY29uc3VsdGFudCIsImEiOiJ0NXNSdE1VIn0.48aKT-tYUwPSibdAXP_NAQ",style: "pk.eyJ1Ijoib25saW5lY29uc3VsdGFudCIsImEiOiJ0NXNSdE1VIn0.48aKT-tYUwPSibdAXP_NAQ", style: "mapbox://styles/onlineconsultant/cixqub94n00042smj5o4gtpu9"},
+      streets: {token: defaulttoken, style: "mapbox://styles/mapbox/streets-v12"},
+      outdoors: {token: defaulttoken, style: "mapbox://styles/mapbox/outdoors-v12"},
+      light: {token: defaulttoken, style: "mapbox://styles/mapbox/light-v11"},
+      dark: {token: defaulttoken, style: "mapbox://styles/mapbox/dark-v11"},
+      satellite: {token: defaulttoken, style: "mapbox://styles/mapbox/satellite-v9"},
+      satellite_streets: {token: defaulttoken, style: "mapbox://styles/mapbox/satellite-streets-v12"},
+      navigation_day: {token: defaulttoken, style: "mapbox://styles/mapbox/navigation-day-v1"},
+      navigation_night: {token: defaulttoken, style: "mapbox://styles/mapbox/navigation-night-v1"},
+      shikuchoson: {token: 'mapbox://styles/cancancanda/ckx5muc1z78db14pgh7sxerq4', style: 'pk.eyJ1IjoiY2FuY2FuY2FuZGEiLCJhIjoiY2tyNGVqOGpjMnVyeTMxcGFrbWlrYTJ5bSJ9.5NRnw4Qr5UPFwtLyG_ao0w'}
+    };
+
+    async function draw_map(sleep_ms) {
+      await sleep(sleep_ms);
+      "use strict";
+      var crossOriginIsolated = false;
+      dic = stylesdic["hakuchizu"]
+      mapboxgl.accessToken = dic["token"];
+
+      const mapObj = new mapboxgl.Map({
+        container: 'mapID',
+        style: dic["style"],
+        center: [135.68380, 36.85676],
+        zoom: 5.2,
+        pitch: 60.00,
+        bearing: -17.60,
+        interactive: true,
+      });
+
+      const tsv = textarea.value.trim();
+      const lines = tsv.split('\n').map(function (l) {
+        let row = l.split('\t');
+        return [row[0], parseFloat(row[1])];
+      });
+
+      let hoveredTowerId;
+
+      Promise.all(lines).then(function (csv) {
+        const geojson = {
+          "type": "FeatureCollection",
+          "features": lines.map(function (d) {
+            if (d[0] == null || d[1] == null || d[0].trim()[0] == "#") {
+              return
+            }
+            let v = LD[d[0]];
+            if (v == null) {
+              alert(d[0] + " の緯度経度情報が見つからないため地図に表示できませんが継続します")
+              return
+            }
+            return {
+              type: "Feature",
+              properties: {
+                name: d[0],
+                full_value: d[1],
+                observatory_value: 0.0
+              },
+              geometry: {
+                type: "Point",
+                coordinates: [
+                  v[1],
+                  v[0]
+                ]
+              }
+            }
+          }).filter(d => d)
+        }
+
+        const position = d3.select("#position");
+
+        mapObj.on('load', function () {
+
+          mapObj.addLayer({
+            'id': 'sky',
+            'type': 'sky',
+            'paint': {
+              'sky-type': 'atmosphere',
+              'sky-atmosphere-sun': [0.0, 0.0],
+              'sky-atmosphere-sun-intensity': 15
+            }
+          });
+
+          mapObj.addSource("data", {
+            type: "geojson",
+            data: geojson,
+          });
+
+          mapObj.addLayer({
+            'id': 'tower_points',
+            'type': 'circle',
+            'source': 'data',
+            'paint': {
+              'circle-opacity': 0
+            }
+          });
+
+          mapObj.addSource('extrusion_source', {
+            "type": "geojson",
+            "data": {
+              type: 'FeatureCollection',
+              features: []
+            }
+          });
+          mapObj.addSource('extrusion_source2', {
+            "type": "geojson",
+            "data": {
+              type: 'FeatureCollection',
+              features: []
+            }
+          });
+
+          mapObj.addLayer({
+            'id': 'extrusion',
+            'type': 'fill-extrusion',
+            'source': 'extrusion_source',
+            'paint': {
+              'fill-extrusion-color': [
+                'case',
+                ['boolean', ['feature-state', 'hover'], false],
+                'red',
+                'blue'
+              ],
+              'fill-extrusion-height': ['get', 'height'],
+              'fill-extrusion-base': ['get', 'base'],
+              'fill-extrusion-opacity': 0.6
+            }
+          });
+          mapObj.addLayer({
+            'id': 'extrusion2',
+            'type': 'fill-extrusion',
+            'source': 'extrusion_source2',
+            'paint': {
+              'fill-extrusion-color': [
+                'case',
+                ['boolean', ['feature-state', 'hover'], false],
+                'lightcoral',
+                'lightskyblue'
+              ],
+              'fill-extrusion-height': ['get', 'height'],
+              'fill-extrusion-base': ['get', 'base'],
+              'fill-extrusion-opacity': 0.6
+            }
+          });
+
+          function update() {
+
+            const qfs = mapObj.queryRenderedFeatures({
+              layers: ['tower_points']
+            });
+            const data = {
+              "type": "FeatureCollection",
+              "features": []
+            }
+            const data2 = {
+              "type": "FeatureCollection",
+              "features": []
+            }
+            const radiusPX = 3;
+
+            // full_height stack
+            qfs.forEach(function (object, i) {
+
+              const center = object.geometry.coordinates;
+
+              let xy = mapObj.project(center);
+              xy.x += radiusPX;
+
+              let LL = mapObj.unproject(xy);
+              LL = turf.point([LL.lng, LL.lat]);
+
+              const radius = turf.distance(center, LL, {
+                units: 'meters'
+              }) + 0.00000001;
+
+              object.properties.height = object.properties.full_value * 600;
+              object.properties.base = object.properties.observatory_value * 600;
+              object.properties.index = i;
+
+              const options = {
+                steps: 16,
+                units: 'meters',
+                properties: object.properties
+              };
+
+              const feature = turf.circle(center, radius, options);
+              feature.id = i;
+
+              data.features.push(feature);
+            })
+
+            mapObj.getSource('extrusion_source').setData(data);
+
+            // observatory_height stack
+            qfs.forEach(function (object, i) {
+
+              const center = object.geometry.coordinates;
+
+              let xy = mapObj.project(center);
+              xy.x += radiusPX;
+
+              let LL = mapObj.unproject(xy);
+              LL = turf.point([LL.lng, LL.lat]);
+
+              const radius = turf.distance(center, LL, {
+                units: 'meters'
+              }) + 0.00000001;
+
+              object.properties.height = object.properties.observatory_value * 600;
+              object.properties.base = 0;
+              object.properties.index = i;
+
+              const options = {
+                steps: 16,
+                units: 'meters',
+                properties: object.properties
+              };
+
+              const feature = turf.circle(center, radius, options);
+              feature.id = i;
+
+              data2.features.push(feature);
+            })
+
+            mapObj.getSource('extrusion_source2').setData(data2);
+          }
+
+          mapObj.on('data', function (e) {
+            if (e.sourceId !== 'data') return
+            update()
+          })
+        })
+
+        mapObj.on('mousemove', 'extrusion', (e) => mousemove(e));
+        mapObj.on('mousemove', 'extrusion2', (e) => mousemove(e));
+        mapObj.on('mouseleave', 'extrusion', () => mouseleave());
+        mapObj.on('mouseleave', 'extrusion2', () => mouseleave());
+
+        const updatePosition = function (props) {
+          const info =
+            '<p>Name: ' + props.name + '</p>' +
+            '<p>Height of tower: ' + props.full_value + 'm</p>' +
+            '<p>Height of observatory: ' + props.observatory_value + 'm</p>';
+
+          position.html(info);
+        };
+
+        const mousemove = (e) => {
+          mapObj.getCanvasContainer().style.cursor = 'pointer';
+
+          if (hoveredTowerId) {
+            mapObj.setFeatureState(
+              { source: 'extrusion_source', id: hoveredTowerId },
+              { hover: false }
+            );
+            mapObj.setFeatureState(
+              { source: 'extrusion_source2', id: hoveredTowerId },
+              { hover: false }
+            );
+          }
+
+          hoveredTowerId = e.features[0].id;
+          mapObj.setFeatureState(
+            { source: 'extrusion_source', id: hoveredTowerId },
+            { hover: true }
+          );
+          mapObj.setFeatureState(
+            { source: 'extrusion_source2', id: hoveredTowerId },
+            { hover: true }
+          );
+          updatePosition(e.features[0].properties)
+        }
+
+        const mouseleave = () => {
+          mapObj.getCanvasContainer().style.cursor = 'default';
+
+          mapObj.setFeatureState(
+            { source: 'extrusion_source', id: hoveredTowerId },
+            { hover: false }
+          );
+          mapObj.setFeatureState(
+            { source: 'extrusion_source2', id: hoveredTowerId },
+            { hover: false }
+          );
+          hoveredTowerId = null;
+        }
+      })
+    }
+
+    let textarea = document.querySelector(`textarea`);
+    let sleep_ms = 800;
+    var prevts = new Date();
+    draw_map(0);
+    textarea.addEventListener('keyup', function () {
+      if (((new Date()) - prevts) > sleep_ms) {
+        draw_map(sleep_ms);
+        prevts = new Date();
+      }
+    });
+  </script><div id="position">
+</body>
+
+<footer>
+    <p style="color: grey;">powered by <a
+        href="https://d3js.org/">d3.js</a>/<a
+        href="https://bl.ocks.org/hirosaji/04b37b81e05800f4531b8941da42eec1">simple</a>/<a
+        href="https://bl.ocks.org/hirosaji/314f95dd4323eebb8ae2466faa5ca266">choropleth</a>/<a
+        href="https://bl.ocks.org/hirosaji/adf6a4c8d1995c3b6276569dac760f78">gradient</a></p>
+</footer>
