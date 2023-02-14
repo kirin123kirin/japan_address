@@ -112,12 +112,32 @@ for (let k in LD) {
 
     let d = new jpmap.japanMap(map, {
       areas: _areas,
+//      width: null,
       height: size,
       lineWidth: 0,
+      movesIslands: true,
       onSelect: function(_d){
         let msg = `${_d.area.value}\n(${_d.name})`;
         alert(msg);
       }
+//      color: "#a0a0a0",
+//      hoverColor: null,
+//      backgroundColor: "transparent",
+//      borderLineColor: "#ffffff",
+//      borderLineWidth: .25,
+//      lineColor: "#a0a0a0",
+//      drawsBoxLine: !0,
+//      showsPrefectureName: !1,
+//      lang: "ja",
+//      prefectures: core.DefinitionOfPrefectures,
+//      movesIslands: !1,
+//      font: "Arial",
+//      fontSize: null,
+//      fontColor: "#000000",
+//      onSelect: function() {},
+//      onHover: function() {},
+//      onHoverOut: function() {}
+
     });
   };
 
