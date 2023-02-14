@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+<title>Japan</title>
+<script type="text/javascript" src="https://unpkg.com/japan-map-js@1.0.1/dist/jpmap.min.js"></script>
+<script language="javascript" type="text/javascript">
+var LD = {
+  "北海道" : 1,
+  "青森県" : 2,
+  "岩手県" : 3,
+  "宮城県" : 4,
+  "秋田県" : 5,
+  "山形県" : 6,
+  "福島県" : 7,
+  "茨城県" : 8,
+  "栃木県" : 9,
+  "群馬県" : 10,
+  "埼玉県" : 11,
+  "千葉県" : 12,
+  "東京都" : 13,
+  "神奈川県" : 14,
+  "新潟県" : 15,
+  "富山県" : 16,
+  "石川県" : 17,
+  "福井県" : 18,
+  "山梨県" : 19,
+  "長野県" : 20,
+  "岐阜県" : 21,
+  "静岡県" : 22,
+  "愛知県" : 23,
+  "三重県" : 24,
+  "滋賀県" : 25,
+  "京都府" : 26,
+  "大阪府" : 27,
+  "兵庫県" : 28,
+  "奈良県" : 29,
+  "和歌山県" : 30,
+  "鳥取県" : 31,
+  "島根県" : 32,
+  "岡山県" : 33,
+  "広島県" : 34,
+  "山口県" : 35,
+  "徳島県" : 36,
+  "香川県" : 37,
+  "愛媛県" : 38,
+  "高知県" : 39,
+  "福岡県" : 40,
+  "佐賀県" : 41,
+  "長崎県" : 42,
+  "熊本県" : 43,
+  "大分県" : 44,
+  "宮崎県" : 45,
+  "鹿児島県" : 46,
+  "沖縄県" : 47
+};
+let i = 0;
+for (let k in LD) {
+  let v = LD[k];
+  LD[k.replace(/[都道府県$]/, "")] = v;
+  if (i < 10) {
+    LD["0" + i.toString] = v;
+  }
+  LD[i.toString()] = v;
+  i++;
+}
+</script>
+
+</head>
+<body>
+<h3>都道府県地図色付けツール</h3>
+<div id="japan-map"></div>
+<textarea id="tsvdata" style="width:100%; height: 100px;" placeholder="地図上に表示したい都道府県別のデータを入力してください">#基本的にExcelから以下のような2列をコピペすれば良い
+東京都	100
+埼玉県	60
+千葉県	30
+</textarea>
+<div>
+地図サイズ指定
+<input type="number" id="map-size" value="540"><br>
+大体400-1000が目安かな
+</div>
+
+<script>
+  var textarea = document.querySelector(`textarea`);
+  var sizearea = document.getElementById("map-size");
+
+  function colorBarRGB(val, maxHue = 120, minHue = 0) {
+    const hue = (val - minHue) / (maxHue - minHue);
+    return `hsl(${(1 - hue) * 100}, 100%, 50%)`;
+  };
+  
+  var map = document.getElementById("japan-map");
+  
+  function draw() {
+    let size = sizearea.value.trim();
+    const tsv = textarea.value.trim();
+    
+    let data = tsv.split('\n').map(function (l) {
+      let row = l.split('\t');
+      let val = String(row[1]).replace(",","");
+      return {"code": LD[row[0]], "value": parseFloat(val)};
+    }).filter(l => l.code);
+    
+    let arr = data.map(l => l.value);
+    let min = Math.min(...arr);
+    let max = Math.max(...arr);
+    
+    let _areas = data.map(function(x) {
+      x["color"] = colorBarRGB(x["value"], max, min);
+      return x;
+    });
+
+    let d = new jpmap.japanMap(map, {
+      areas: _areas,
+      height: size,
+      lineWidth: 0,
+      onSelect: function(_d){
+        let msg = `${_d.area.value}\n(${_d.name})`;
+        alert(msg);
+      }
+    });
+  };
+
+  
+  let sleep_ms = 800;
+  var prevts = new Date();
+
+  draw()
+  
+  textarea.addEventListener('keyup', function () {
+    if (((new Date()) - prevts) > sleep_ms) {
+      map.firstElementChild.remove()
+      draw()
+      prevts = new Date();
+    }
+  });
+  
+  sizearea.addEventListener('change', function () {
+    if (((new Date()) - prevts) > sleep_ms / 2) {
+      map.firstElementChild.remove()
+      draw()
+      prevts = new Date();
+    }
+  });
+  
+</script>
+</body>
+</html>
