@@ -116,10 +116,24 @@ for (let k in LD) {
       height: size,
       lineWidth: 0,
       movesIslands: true,
-      onSelect: function(_d){
-        let msg = `${_d.area.value}\n(${_d.name})`;
-        alert(msg);
-      }
+      onHover: function(_d){
+        if(_d.area) {
+          let msg = `${_d.area.value}\n(${_d.name})`;
+          document.querySelector(`canvas`).title = msg;
+        }
+      },
+      onHoverOut: function(_d) {
+        let canvas = document.querySelector(`canvas`)
+        if (canvas.hasAttribute('title')) {
+          canvas.removeAttribute('title');
+        }
+      },
+      onSelect: function(_d) {
+        if(_d.area.href) {
+          location.href = _d.area.href;
+        }
+      },
+      showsPrefectureName: true,
 //      color: "#a0a0a0",
 //      hoverColor: null,
 //      backgroundColor: "transparent",
@@ -127,17 +141,11 @@ for (let k in LD) {
 //      borderLineWidth: .25,
 //      lineColor: "#a0a0a0",
 //      drawsBoxLine: !0,
-//      showsPrefectureName: !1,
 //      lang: "ja",
 //      prefectures: core.DefinitionOfPrefectures,
-//      movesIslands: !1,
-//      font: "Arial",
-//      fontSize: null,
-//      fontColor: "#000000",
-//      onSelect: function() {},
-//      onHover: function() {},
-//      onHoverOut: function() {}
-
+      font: "メイリオ",
+      fontSize: 6,
+      fontColor: "#bfbfbf",
     });
   };
 
